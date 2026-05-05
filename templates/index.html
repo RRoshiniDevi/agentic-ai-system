@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThinkFlow - Agentic AI System</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #7c6afc;
+    --accent2: #5eead4;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --error: #f87171;
+    --tool-bg: #1e2235;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  header h1 { font-size: 18px; font-weight: 600; }
+  header p  { font-size: 12px; color: var(--muted); }
+
+  .key-status {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+  }
+
+  .badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .badge.ok  { background: #14532d; color: var(--success); }
+  .badge.bad { background: #450a0a; color: var(--error); }
+
+  /* ── Main layout ── */
+  main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Left panel: input ── */
+  .left-panel {
+    width: 340px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .left-panel h2 { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  .examples { display: flex; flex-direction: column; gap: 8px; }
+
+  .example-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    line-height: 1.4;
+  }
+  .example-btn:hover { border-color: var(--accent); }
+
+  textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 120px;
+    font-family: inherit;
+    line-height: 1.5;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--accent); }
+
+  #run-btn {
+    background: linear-gradient(135deg, var(--accent), #6356d6);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  #run-btn:hover { opacity: 0.9; }
+  #run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Right panel: output ── */
+  .right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Iteration progress bar ── */
+  .progress-bar {
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .progress-label { font-size: 12px; color: var(--muted); min-width: 80px; text-align: right; }
+
+  /* ── Log feed ── */
+  #log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .log-entry {
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+
+  .log-entry.iteration {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .log-entry.thinking {
+    background: var(--surface);
+    border-left: 3px solid var(--muted);
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .log-entry.tool-call {
+    background: var(--tool-bg);
+    border-left: 3px solid var(--warning);
+  }
+  .log-entry.tool-call .tool-name {
+    color: var(--warning);
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .log-entry.tool-call pre {
+    background: #0f1117;
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    overflow-x: auto;
+    color: #a5b4fc;
+    white-space: pre-wrap;
+  }
+
+  .log-entry.tool-result {
+    background: var(--surface);
+    border-left: 3px solid var(--accent2);
+  }
+  .log-entry.tool-result .result-label {
+    color: var(--accent2);
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .log-entry.tool-result .result-text {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: pre-wrap;
+    font-family: monospace;
+  }
+
+  .log-entry.status {
+    background: var(--surface);
+    border-left: 3px solid var(--success);
+    color: var(--success);
+  }
+
+  .log-entry.error-entry {
+    background: #1f0a0a;
+    border-left: 3px solid var(--error);
+    color: var(--error);
+  }
+
+  /* ── Final answer ── */
+  #final-answer {
+    border-top: 1px solid var(--border);
+    padding: 20px;
+    overflow-y: auto;
+    max-height: 45%;
+    background: var(--surface);
+    flex-shrink: 0;
+    display: none;
+  }
+
+  #final-answer h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent2);
+    margin-bottom: 12px;
+  }
+
+  #final-answer-content {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  /* Markdown styles inside final answer */
+  #final-answer-content h1 { font-size: 20px; margin: 16px 0 8px; color: var(--accent2); }
+  #final-answer-content h2 { font-size: 17px; margin: 14px 0 6px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+  #final-answer-content h3 { font-size: 14px; margin: 10px 0 4px; color: var(--muted); }
+  #final-answer-content p  { margin: 6px 0; }
+  #final-answer-content ul, #final-answer-content ol { margin: 6px 0 6px 20px; }
+  #final-answer-content li { margin: 3px 0; }
+  #final-answer-content code { background: var(--surface2); padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 12px; }
+  #final-answer-content pre { background: var(--surface2); padding: 12px; border-radius: 6px; overflow-x: auto; }
+  #final-answer-content strong { color: var(--text); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .spinner {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border: 2px solid var(--muted);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    gap: 10px;
+  }
+  .placeholder .icon { font-size: 48px; opacity: 0.3; }
+  .placeholder p { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🤖</div>
+  <div>
+    <h1>ThinkFlow - Agentic AI System</h1>
+    <p>Plan → Act → Observe → Iterate</p>
+  </div>
+  <div class="key-status" id="key-status"></div>
+</header>
+
+<main>
+  <!-- Left: Input panel -->
+  <div class="left-panel">
+    <div>
+      <h2>Quick Examples</h2>
+    </div>
+    <div class="examples">
+      <button class="example-btn" onclick="setGoal(this)">Research Agentic AI and write a comprehensive report</button>
+      <button class="example-btn" onclick="setGoal(this)">What is the current weather in Tokyo and London? Compare them.</button>
+      <button class="example-btn" onclick="setGoal(this)">Look up Quantum Computing on Wikipedia and summarize the key concepts</button>
+      <button class="example-btn" onclick="setGoal(this)">Write Python code to generate the first 10 Fibonacci numbers and execute it</button>
+      <button class="example-btn" onclick="setGoal(this)">Calculate compound interest: $5000 at 8% annual rate over 15 years</button>
+    </div>
+
+    <div>
+      <h2 style="margin-bottom:10px">Your Goal</h2>
+      <textarea id="goal-input" placeholder="Type your goal here... e.g. Research the latest trends in AI and save a report"></textarea>
+    </div>
+
+    <button id="run-btn" onclick="runAgent()">▶ Run Agent</button>
+  </div>
+
+  <!-- Right: Output panel -->
+  <div class="right-panel">
+    <!-- Progress bar -->
+    <div class="progress-bar">
+      <span style="font-size:13px;color:var(--muted)">Progress</span>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <span class="progress-label" id="progress-label">Ready</span>
+    </div>
+
+    <!-- Log feed -->
+    <div id="log">
+      <div class="placeholder" id="placeholder">
+        <div class="icon">🧠</div>
+        <p>Enter a goal and click Run Agent to start</p>
+      </div>
+    </div>
+
+    <!-- Final answer -->
+    <div id="final-answer">
+      <h3>✅ Final Answer</h3>
+      <div id="final-answer-content"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Check API key status on load
+  fetch('/check-key').then(r => r.json()).then(data => {
+    const el = document.getElementById('key-status');
+    el.innerHTML = `
+      <span class="badge ${data.anthropic ? 'ok' : 'bad'}">
+        ${data.anthropic ? '✓' : '✗'} Anthropic
+      </span>
+      <span class="badge ${data.tavily ? 'ok' : 'bad'}">
+        ${data.tavily ? '✓' : '✗'} Tavily
+      </span>`;
+  });
+
+  function setGoal(btn) {
+    document.getElementById('goal-input').value = btn.textContent.trim();
+  }
+
+  function addLog(type, html) {
+    const placeholder = document.getElementById('placeholder');
+    if (placeholder) placeholder.remove();
+
+    const log = document.getElementById('log');
+    const div = document.createElement('div');
+    div.className = `log-entry ${type}`;
+    div.innerHTML = html;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function setProgress(current, max) {
+    const pct = max > 0 ? (current / max) * 100 : 0;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-label').textContent =
+      max > 0 ? `Iteration ${current}/${max}` : 'Ready';
+  }
+
+  function runAgent() {
+    const goal = document.getElementById('goal-input').value.trim();
+    if (!goal) { alert('Please enter a goal first!'); return; }
+
+    // Reset UI
+    document.getElementById('log').innerHTML = '';
+    document.getElementById('final-answer').style.display = 'none';
+    document.getElementById('final-answer-content').innerHTML = '';
+    setProgress(0, 10);
+
+    const btn = document.getElementById('run-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Running...';
+
+    const evtSource = new EventSource('/run?_=' + Date.now());
+
+    // Send goal via POST first, then listen via SSE
+    fetch('/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal }),
+    }).then(response => {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      function read() {
+        reader.read().then(({ done, value }) => {
+          if (done) {
+            btn.disabled = false;
+            btn.textContent = '▶ Run Agent';
+            return;
+          }
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const msg = JSON.parse(line.slice(6));
+                handleMessage(msg);
+              } catch(e) {}
+            }
+          }
+          read();
+        });
+      }
+      read();
+    }).catch(err => {
+      addLog('error-entry', `❌ Connection error: ${err.message}`);
+      btn.disabled = false;
+      btn.textContent = '▶ Run Agent';
+    });
+  }
+
+  function handleMessage(msg) {
+    const { type, data } = msg;
+
+    if (type === 'iteration') {
+      setProgress(data.number, data.max);
+      addLog('iteration', `━━ Iteration ${data.number} / ${data.max} ━━`);
+    }
+    else if (type === 'thinking') {
+      addLog('thinking', `<span class="spinner"></span>${data.message}`);
+    }
+    else if (type === 'status') {
+      addLog('status', data.message);
+    }
+    else if (type === 'tool_call') {
+      const inputStr = JSON.stringify(data.input, null, 2);
+      addLog('tool-call', `
+        <div class="tool-name">🔧 ACTION → ${data.tool}</div>
+        <pre>${escapeHtml(inputStr)}</pre>
+      `);
+    }
+    else if (type === 'tool_result') {
+      addLog('tool-result', `
+        <div class="result-label">📋 RESULT from ${data.tool}</div>
+        <div class="result-text">${escapeHtml(data.result)}</div>
+      `);
+    }
+    else if (type === 'final_answer') {
+      setProgress(10, 10);
+      const fa = document.getElementById('final-answer');
+      fa.style.display = 'block';
+      document.getElementById('final-answer-content').innerHTML =
+        marked.parse(data.content);
+      fa.scrollIntoView({ behavior: 'smooth' });
+    }
+    else if (type === 'done') {
+      addLog('status', `✅ ${data.message}`);
+      document.getElementById('run-btn').disabled = false;
+      document.getElementById('run-btn').textContent = '▶ Run Agent';
+    }
+    else if (type === 'error') {
+      addLog('error-entry', `❌ ${data.message}`);
+      document.getElementById('run-btn').disabled = false;
+      document.getElementById('run-btn').textContent = '▶ Run Agent';
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+</script>
+</body>
+</html>
