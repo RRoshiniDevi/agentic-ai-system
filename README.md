@@ -226,3 +226,8 @@ See `docs/ADDING_TOOLS.md` for a complete walkthrough.
 ## 📄 License
 
 MIT License — free to use, modify, and distribute with attribution.
+
+## 👤 Author
+
+**R RoshiniDevi**
+AI/ML Enthusiast | Building intelligent systems
